@@ -1,0 +1,11 @@
+import { IsString, MinLength } from 'class-validator';
+
+export class SendMessageDto {
+  @IsString()
+  @MinLength(1)
+  to!: string;
+
+  @IsString()
+  @MinLength(1)
+  message!: string;
+}
