@@ -10,6 +10,7 @@ import { InstagramModule } from './modules/instagram/instagram.module';
 import { VtexModule } from './modules/vtex/vtex.module';
 import { BillingModule } from './modules/billing/billing.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { CrmModule } from './modules/crm/crm.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { AuthModule } from './modules/auth/auth.module';
     InstagramModule,
     VtexModule,
     BillingModule,
+    CrmModule,
   ],
   controllers: [AppController],
   providers: [AppService],

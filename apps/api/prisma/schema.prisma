@@ -1,0 +1,140 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Tenant {
+  id             String        @id @default(cuid()) @map("id")
+  name           String
+  slug           String        @unique
+  plan           String        @default("STARTER")
+  status         String        @default("ACTIVE")
+  containerName  String?
+  onboardingStep Int?          @default(0)
+  createdAt      DateTime      @default(now()) @map("created_at")
+
+  contacts      Contact[]
+  conversations Conversation[]
+  tags          Tag[]
+  botConfigs    BotConfig[]
+
+  @@map("tenants")
+}
+
+model Contact {
+  id             String    @id @default(cuid()) @map("id")
+  name           String?
+  email          String?
+  phone          String?
+  tags           Json?     @default("[]")
+  vtexCustomerId String?   @map("vtex_customer_id")
+  totalOrders    Int       @default(0) @map("total_orders")
+  totalSpent     Float     @default(0) @map("total_spent")
+  lastPurchaseAt DateTime? @map("last_purchase_at")
+  metadata       Json?     @default("{}")
+  firstSeenAt    DateTime  @default(now()) @map("first_seen_at")
+  blocked        Boolean   @default(false)
+  tenantId       String    @map("tenant_id")
+  tenant         Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  conversations Conversation[]
+
+  @@unique([phone, tenantId])
+  @@index([tenantId])
+  @@index([email])
+  @@map("contacts")
+}
+
+model Conversation {
+  id            String    @id @default(cuid()) @map("id")
+  status        String    @default("bot_active")
+  channel       String    @default("whatsapp")
+  assignedTo    String?   @map("assigned_to")
+  assignedAt    DateTime? @map("assigned_at")
+  escalatedAt   DateTime? @map("escalated_at")
+  escalatedBy   String?   @map("escalated_by")
+  lastActivity  DateTime  @default(now()) @map("last_activity")
+  contactId     String    @map("contact_id")
+  contact       Contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  tenantId      String    @map("tenant_id")
+  tenant        Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  messages    Message[]
+  agentNotes  AgentNote[]
+
+  @@index([tenantId])
+  @@index([contactId])
+  @@index([status])
+  @@map("conversations")
+}
+
+model Message {
+  id             String   @id @default(cuid()) @map("id")
+  role           String   @default("customer")
+  content        String
+  messageType    String   @default("text") @map("message_type")
+  status         String   @default("received")
+  direction      String   @default("INBOUND")
+  whatsappMsgId  String?  @unique @map("whatsapp_msg_id")
+  metadata       Json?    @default("{}")
+  conversationId String   @map("conversation_id")
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  tenantId       String   @map("tenant_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@index([conversationId])
+  @@index([tenantId])
+  @@index([whatsappMsgId])
+  @@map("messages")
+}
+
+model Tag {
+  id        String   @id @default(cuid()) @map("id")
+  name      String
+  color     String   @default("#6366f1")
+  tenantId  String   @map("tenant_id")
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([name, tenantId])
+  @@index([tenantId])
+  @@map("tags")
+}
+
+model AgentNote {
+  id             String       @id @default(cuid()) @map("id")
+  content        String
+  authorId       String       @map("author_id")
+  conversationId String       @map("conversation_id")
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  tenantId       String       @map("tenant_id")
+  createdAt      DateTime     @default(now()) @map("created_at")
+
+  @@index([conversationId])
+  @@index([tenantId])
+  @@map("agent_notes")
+}
+
+model BotConfig {
+  id          String   @id @default(cuid()) @map("id")
+  category    String
+  prompt      String   @default("")
+  keywords    Json?    @default("[]")
+  enabled     Boolean  @default(true)
+  tenantId    String   @map("tenant_id")
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@unique([category, tenantId])
+  @@index([tenantId])
+  @@map("bot_configs")
+}
